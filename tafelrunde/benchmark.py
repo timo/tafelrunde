@@ -135,11 +135,14 @@ class Benchmark(object):
             else:
                 (cpid, exit_s, rusage) = os.wait4(pid, 0)
                 elapsed_time = time.time() - starttime
+                returncode = exit_s >> 8 # the high bit is the return value
                 self.results[self.function.call_id(**funccall)] = dict(
                         utime=rusage.ru_utime,
                         stime=rusage.ru_stime,
                         time=elapsed_time,
-                        mem_usage=rusage.ru_maxrss * resource.getpagesize())
+                        mem_usage=rusage.ru_maxrss * resource.getpagesize(),
+                        returncode=returncode,
+                        )
                 print self.results[self.function.call_id(**funccall)]
 
 class BenchmarkSuite(object):
