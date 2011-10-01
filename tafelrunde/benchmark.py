@@ -95,7 +95,7 @@ class MetaFunc(object):
 class Benchmark(object):
     def __init__(self, name):
         self.name = name
-        self.warmup = None
+        self._warmup = None
         self.function = None
 
         self.results = {}
@@ -108,7 +108,7 @@ class Benchmark(object):
             arg_filler(self.function)
 
     def warmup(self, function):
-        self.warmup = function
+        self._warmup = function
         return function
 
     def body(self, function):
@@ -116,10 +116,10 @@ class Benchmark(object):
         return function
 
     def __call__(self, **kwargs):
-        if self.warmup:
+        if self._warmup:
             print "(warmup...",
             sys.stdout.flush()
-            self.warmup()
+            self._warmup()
             print "done)"
 
         for funccall in self.function.calls:
@@ -165,7 +165,9 @@ class BenchmarkSuite(object):
         return func
 
     def warmup(self, bench_func):
+        print "making warmup wrapper"
         def wrapper(func):
+            print "putting %s into %s (which is %s)" % (func, bench_func.func_name, self.benchmarks[bench_func.func_name])
             return self.benchmarks[bench_func.func_name].warmup(func)
         return wrapper
 

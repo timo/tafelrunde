@@ -13,13 +13,13 @@ def test_different_maximums(metafunc):
         arg_values = {"a": range(0, 3), "b": range(5,7)}
         metafunc.call_combinations(arg_values)
 
-@s.warmup
-def warm_up():
-    add_up(99, 9)
-
 @s.bench_func
 def add_up(a, b):
     return a + b
+
+@s.warmup(add_up)
+def warmup_add_up_func():
+    add_up(99, 9)
 
 @s.bench_func
 def calculate_unreasonably(maximum):
