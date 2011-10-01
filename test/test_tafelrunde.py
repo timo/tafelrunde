@@ -24,12 +24,8 @@ def warmup_add_up_func():
 @s.bench_func
 def calculate_unreasonably(maximum):
     acc = 0
-    for i in range(maximum):
+    end_time = time.time() + maximum / 5000
+    while time.time() < end_time:
         time.sleep(random.random() * 0.0001)
-        acc += i
-    acc = 0
-    for i in range(maximum):
-        time.sleep(random.random() * 0.0001)
-        acc += i
+        acc += 1
 
-s()

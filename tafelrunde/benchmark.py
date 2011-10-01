@@ -143,10 +143,11 @@ class Benchmark(object):
                 print self.results[self.function.call_id(**funccall)]
 
 class BenchmarkSuite(object):
-    def __init__(self, name):
+    def __init__(self, name, version_str="1"):
         self.name = name
         self.benchmarks = {}
         self.arg_fill_func = None
+        self.version_str = version_str
 
     def arg_filler(self, func):
         self.arg_fill_func = func
@@ -165,16 +166,14 @@ class BenchmarkSuite(object):
         return func
 
     def warmup(self, bench_func):
-        print "making warmup wrapper"
         def wrapper(func):
-            print "putting %s into %s (which is %s)" % (func, bench_func.func_name, self.benchmarks[bench_func.func_name])
             return self.benchmarks[bench_func.func_name].warmup(func)
         return wrapper
 
     def __call__(self):
         for benchmark in self.benchmarks.values():
             benchmark.prepare(self.arg_fill_func)
-        print "Running Benchmark Suite %s" % (self.name,)
+        print "Running Benchmark Suite %s (version %s)" % (self.name,self.version_str)
         print "-" * 40
         for bench in self.benchmarks.values():
             print "Running benchmark %s" % (bench.name,)
