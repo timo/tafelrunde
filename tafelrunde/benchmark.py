@@ -33,6 +33,7 @@ import time
 import resource
 import json
 import traceback
+import gc
 
 import itertools
 
@@ -140,12 +141,19 @@ class Benchmark(object):
 
             if pid == 0:
                 r.close()
+                del r
                 exitcode = 0
+                gc.collect()
+
+                data = dict(status="success")
+
                 own_resource = resource.getrusage(resource.RUSAGE_SELF)
                 own_maxrss = own_resource.ru_maxrss
-                starttime = time.time()
-                data = dict(status="success", start_maxrss=own_maxrss)
+                data["start_maxrss"]=own_maxrss
+                del own_maxrss
+                del own_resource
 
+                starttime = time.time()
                 try:
                     self.function(**funccall)
                     elapsed_time = time.time() - starttime
