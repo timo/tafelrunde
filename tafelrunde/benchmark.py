@@ -142,7 +142,9 @@ class Benchmark(object):
                 data = dict(status="success")
                 try:
                     self.function(**funccall)
+                    elapsed_time = time.time() - starttime
                 except Exception, e:
+                    elapsed_time = time.time() - starttime
 
                     exitcode = 1
                     the_str = traceback.format_exc()
@@ -164,7 +166,6 @@ class Benchmark(object):
                         locals=dumpsed_locals,
                         ))
                 finally:
-                    elapsed_time = time.time() - starttime
                     data.update(dict(time=elapsed_time))
                     w.write(json.dumps(data))
                     w.flush()
