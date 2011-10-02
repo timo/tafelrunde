@@ -143,8 +143,6 @@ class Benchmark(object):
                 try:
                     self.function(**funccall)
                 except Exception, e:
-                    elapsed_time = time.time() - starttime
-                    data.update(dict(time=elapsed_time))
 
                     exitcode = 1
                     the_str = traceback.format_exc()
@@ -166,6 +164,8 @@ class Benchmark(object):
                         locals=dumpsed_locals,
                         ))
                 finally:
+                    elapsed_time = time.time() - starttime
+                    data.update(dict(time=elapsed_time))
                     w.write(json.dumps(data))
                     w.flush()
                     w.close()
@@ -181,7 +181,7 @@ class Benchmark(object):
                 self.results[self.function.call_id(**funccall)] = dict(
                         utime=rusage.ru_utime,
                         stime=rusage.ru_stime,
-                        time=data["elapsed_time"],
+                        time=data["time"],
                         mem_usage=rusage.ru_maxrss * resource.getpagesize(),
                         returncode=returncode,
                         data=data,
