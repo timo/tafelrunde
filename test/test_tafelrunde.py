@@ -15,6 +15,8 @@ def test_different_maximums(metafunc):
 
 @s.bench_func
 def add_up(a, b):
+    if a + b % 5 == 0:
+        raise ValueError("a and b is divisible through 5")
     return a + b
 
 @s.warmup(add_up)
@@ -24,8 +26,9 @@ def warmup_add_up_func():
 @s.bench_func
 def calculate_unreasonably(maximum):
     acc = 0
-    end_time = time.time() + maximum / 5000
+    end_time = time.time() + maximum / 20000
     while time.time() < end_time:
         time.sleep(random.random() * 0.0001)
         acc += 1
 
+s()

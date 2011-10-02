@@ -26,10 +26,13 @@ to run.
 In later versions, the current version of the software being tested will be
 determined and benchmark histories will be created.
 """
+
 import os
 import sys
 import time
 import resource
+import json
+import traceback
 
 import itertools
 
@@ -124,24 +127,55 @@ class Benchmark(object):
 
         for funccall in self.function.calls:
             print self.function.call_id(**funccall)
+            (r, w) = os.pipe()
+            (r, w) = os.fdopen(r, "r", 0), os.fdopen(w, "w", 0)
             starttime = time.time()
             pid = os.fork()
             if pid == 0:
+                r.close()
                 try:
                     self.function(**funccall)
+                    w.write('{"status": "success"}')
+                    w.flush()
+                    w.close()
                     sys.exit(0)
-                except:
+                except Exception, e:
+                    the_str = traceback.format_exc()
+
+                    # try json-dumpsing or repring all local variables from the benchmark
+                    dumpsed_locals = {}
+                    for name, local in sys.exc_info()[2].tb_frame.f_back.f_back.f_locals.iteritems():
+                        try:
+                            dat = json.dumps(local)
+                            dat = local
+                        except:
+                            dat = repr(local)
+                        dumpsed_locals[name] = dat
+
+                    w.write(json.dumps(dict(
+                        status="exception",
+                        exc=dict(typename=str(e.__class__),
+                            tb_str=the_str),
+                        locals=dumpsed_locals,
+                        )))
+                    w.flush()
+                    w.close()
                     sys.exit(1)
             else:
+                w.close()
                 (cpid, exit_s, rusage) = os.wait4(pid, 0)
                 elapsed_time = time.time() - starttime
                 returncode = exit_s >> 8 # the high bit is the return value
+
+                data = json.loads(r.read())
+                r.close()
                 self.results[self.function.call_id(**funccall)] = dict(
                         utime=rusage.ru_utime,
                         stime=rusage.ru_stime,
                         time=elapsed_time,
                         mem_usage=rusage.ru_maxrss * resource.getpagesize(),
                         returncode=returncode,
+                        data=data,
                         )
                 print self.results[self.function.call_id(**funccall)]
 
