@@ -128,8 +128,11 @@ class Benchmark(object):
         if self._warmup:
             print "(warmup...",
             sys.stdout.flush()
+            warmupstart = time.time()
             self._warmup()
-            print "done)"
+            duration = time.time() - warmupstart
+            print "done in %.5f s)" % duration
+            del duration, warmupstart
 
         for funccall in self.function.calls:
             print self.function.call_id(**funccall)
