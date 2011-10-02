@@ -99,6 +99,7 @@ class Benchmark(object):
     def __init__(self, name):
         self.name = name
         self._warmup = None
+        self._complexity = None
         self.function = None
 
         self.results = {}
@@ -117,6 +118,10 @@ class Benchmark(object):
     def body(self, function):
         self.function = MetaFunc(function)
         return function
+
+    def complexity(self, func):
+        self._complexity = func
+        return func
 
     def __call__(self, **kwargs):
         if self._warmup:
@@ -205,6 +210,11 @@ class BenchmarkSuite(object):
     def warmup(self, bench_func):
         def wrapper(func):
             return self.benchmarks[bench_func.func_name].warmup(func)
+        return wrapper
+
+    def complexity(self, bench_func):
+        def wrapper(func):
+            return self.benchmarks[bench_func.func_name].complexity(func)
         return wrapper
 
     def __call__(self):
