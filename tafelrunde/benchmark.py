@@ -134,17 +134,19 @@ class Benchmark(object):
             print self.function.call_id(**funccall)
             (r, w) = os.pipe()
             (r, w) = os.fdopen(r, "r", 0), os.fdopen(w, "w", 0)
-            starttime = time.time()
             pid = os.fork()
             if pid == 0:
                 r.close()
+                exitcode = 0
+                starttime = time.time()
+                data = dict(status="success")
                 try:
                     self.function(**funccall)
-                    w.write('{"status": "success"}')
-                    w.flush()
-                    w.close()
-                    sys.exit(0)
                 except Exception, e:
+                    elapsed_time = time.time() - starttime
+                    data.update(dict(time=elapsed_time))
+
+                    exitcode = 1
                     the_str = traceback.format_exc()
 
                     # try json-dumpsing or repring all local variables from the benchmark
@@ -157,19 +159,21 @@ class Benchmark(object):
                             dat = repr(local)
                         dumpsed_locals[name] = dat
 
-                    w.write(json.dumps(dict(
+                    data.update(dict(
                         status="exception",
                         exc=dict(typename=str(e.__class__),
                             tb_str=the_str),
                         locals=dumpsed_locals,
-                        )))
+                        ))
+                finally:
+                    w.write(json.dumps(data))
                     w.flush()
                     w.close()
-                    sys.exit(1)
+                    sys.exit(exitcode)
+
             else:
                 w.close()
                 (cpid, exit_s, rusage) = os.wait4(pid, 0)
-                elapsed_time = time.time() - starttime
                 returncode = exit_s >> 8 # the high bit is the return value
 
                 data = json.loads(r.read())
@@ -177,7 +181,7 @@ class Benchmark(object):
                 self.results[self.function.call_id(**funccall)] = dict(
                         utime=rusage.ru_utime,
                         stime=rusage.ru_stime,
-                        time=elapsed_time,
+                        time=data["elapsed_time"],
                         mem_usage=rusage.ru_maxrss * resource.getpagesize(),
                         returncode=returncode,
                         data=data,
