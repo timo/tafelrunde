@@ -134,16 +134,23 @@ class Benchmark(object):
             print self.function.call_id(**funccall)
             (r, w) = os.pipe()
             (r, w) = os.fdopen(r, "r", 0), os.fdopen(w, "w", 0)
+
+
             pid = os.fork()
+
             if pid == 0:
                 r.close()
                 exitcode = 0
+                own_resource = resource.getrusage(resource.RUSAGE_SELF)
+                own_maxrss = own_resource.ru_maxrss
                 starttime = time.time()
-                data = dict(status="success")
+                data = dict(status="success", start_maxrss=own_maxrss)
+
                 try:
                     self.function(**funccall)
                     elapsed_time = time.time() - starttime
                 except Exception, e:
+                    print "there was an exception"
                     elapsed_time = time.time() - starttime
 
                     exitcode = 1
@@ -176,9 +183,6 @@ class Benchmark(object):
                 w.close()
                 (cpid, exit_s, rusage) = os.wait4(pid, 0)
 
-                own_resource = resource.getrusage(resource.RUSAGE_SELF)
-                own_maxrss = own_resource.ru_maxrss
-
                 returncode = exit_s >> 8 # the high bit is the return value
 
                 data = json.loads(r.read())
@@ -187,10 +191,12 @@ class Benchmark(object):
                         utime=rusage.ru_utime,
                         stime=rusage.ru_stime,
                         time=data["time"],
-                        mem_usage=(rusage.ru_maxrss - own_maxrss) * resource.getpagesize(),
+                        mem_usage=(rusage.ru_maxrss - data["start_maxrss"]),# * resource.getpagesize(),
                         returncode=returncode,
                         data=data,
                         )
+                if data["status"] == "exception":
+                    print data["exc"]["tb_str"]
                 print self.results[self.function.call_id(**funccall)]
 
 class BenchmarkSuite(object):
