@@ -175,6 +175,10 @@ class Benchmark(object):
             else:
                 w.close()
                 (cpid, exit_s, rusage) = os.wait4(pid, 0)
+
+                own_resource = resource.getrusage(resource.RUSAGE_SELF)
+                own_maxrss = own_resource.ru_maxrss
+
                 returncode = exit_s >> 8 # the high bit is the return value
 
                 data = json.loads(r.read())
@@ -183,7 +187,7 @@ class Benchmark(object):
                         utime=rusage.ru_utime,
                         stime=rusage.ru_stime,
                         time=data["time"],
-                        mem_usage=rusage.ru_maxrss * resource.getpagesize(),
+                        mem_usage=(rusage.ru_maxrss - own_maxrss) * resource.getpagesize(),
                         returncode=returncode,
                         data=data,
                         )
